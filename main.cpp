@@ -5,6 +5,7 @@
 #include<stdint.h>
 #include "simulate.h"
 #include "regfile.h"
+#include "Instruction.h"
 const int32_t N = 258;
 using namespace std;
 int main()
@@ -46,10 +47,14 @@ int main()
 			data[i] = data[i] * 16 * 16 + (unsigned int)((unsigned char)(databuf[4 * i + j]));
 	//initialize regfile
    regfile reg;
+   Control control;
+   bufferIDEX IDEX;
+   Instruction instru;
    reg.PC = instruction[0];
    reg.SP = data[0];
    reg.IF = instruction[2];
    printf("cycle 0\n");
 	reg.show();
-
+	control.show();
+	IDEX.instr_decode(instruction[2], control, reg,instru);
 }

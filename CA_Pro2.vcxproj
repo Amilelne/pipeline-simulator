@@ -120,6 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arithmetic.h" />
+    <ClInclude Include="Instruction.h" />
     <ClInclude Include="regfile.h" />
     <ClInclude Include="simulate.h" />
   </ItemGroup>

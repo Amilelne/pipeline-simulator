@@ -1,5 +1,6 @@
 #include "simulate.h"
 #include "regfile.h"
+#include "Instruction.h"
 #include<iostream>
 using namespace std;
 bufferDMWB::bufferDMWB() {
@@ -35,6 +36,17 @@ void bufferIFID::instr_fetch(int IniPC,int PC,int instr[],regfile &reg) {
 	reg.IF = instr[tmp / 4 + 2];
 	reg.PC = PC + 4;
 }
-void bufferIDEX::instr_decode(int instr) {
-
+void bufferIDEX::instr_decode(int instr,Control &control,regfile &reg,Instruction &instruction) {
+	opcode = (0xfc000000 & instr) >> 26;
+	func = (0x0000003f & instr);
+	rs_num = (0x03e00000 & instr) >> 21;
+	rt_num = (0x001f0000 & instr) >> 16;
+	rd_num = (0x0000f800 & instr) >> 11;
+	immediate = (0x0000ffff & instr);
+	rsdata = reg.reg[rs_num];
+	rtdata = reg.reg[rt_num];
+	control.opcode = opcode;
+	instruction.getname(opcode,func);
+	instruction.show();
+	printf("%x,%d,%d,%d,%x,%x,%x", opcode, rs_num, rt_num, rd_num, immediate, rsdata, rtdata);
 }
