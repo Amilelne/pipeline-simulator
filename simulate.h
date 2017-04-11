@@ -1,15 +1,41 @@
 #pragma once
 #include "regfile.h"
 #include "Instruction.h"
+class WB {
+public:
+	bool RegWrite;
+	bool MemtoReg;
+	WB() {
+		RegWrite = false;
+		MemtoReg = false;
+	}
+};
+class M {
+public:
+	bool MemRead;
+	bool MemWrite;
+	M() {
+		MemRead = false;
+		MemWrite = false;
+	}
+};
+class EX {
+public:
+	int ALUOp;
+	bool ALUSrc;
+	bool RegDst;
+	EX() {
+		ALUOp = 0x00;
+	}
+};
 class Control {
 public:
-	int opcode;
 	bool RegDst;
 	bool Jump;
 	bool Branch;
 	bool MemRead;
 	bool MemtoReg;
-	bool ALUOp;
+	int ALUOp;
 	bool MemWrite;
 	bool ALUSrc;
 	bool RegWrite;
@@ -17,29 +43,31 @@ public:
 		RegDst = Jump = Branch = MemRead = MemtoReg = ALUOp = MemWrite = ALUSrc = RegWrite = false;
 	}
 	void show() {
-		printf("%d,%d,%d,%d,%d,%d,%d,%d,%d\n", RegDst, Jump, Branch, MemRead, MemtoReg, ALUOp, MemWrite, ALUSrc, RegWrite);
+		printf("control:%d,%d,%d,%d,%d,%d,%d,%d,%d\n", RegDst, Jump, Branch, MemRead, MemtoReg, ALUOp, MemWrite, ALUSrc, RegWrite);
 	}
+	void decode_instr(int opcode);
+	//void trans_to_IDEX(bufferIDEX &buf);
 };
 class bufferDMWB {
 public:
-	int data;
 	int ALU_result;
+	int data;
 	int rt;
-	bool WB;
+	int opcode;
+	WB wb;
 public:
 	bufferDMWB();
-	bufferDMWB(int d, int A, int r, bool c);
 };
 class bufferEXDM {
 public:
 	int ALU_result;
-	int address;
-	int rt;
-	bool WB;
-	bool DM;
+	int rtdata;
+	int opcode;
+	WB wb;
+	M m;
 public:
 	bufferEXDM();
-	bufferEXDM(int A, int a, int r, bool W, bool D);
+	bufferEXDM(int A, int a, int r);
 };
 class bufferIDEX {
 public:
@@ -55,15 +83,13 @@ public:
 	int func;
 	int immediate;
 	bool equal;
-	bool EX;
-	bool DM;
-	bool WB;
+	EX ex;
+	M m;
+	WB wb;
 public:
 	bufferIDEX() {
-		equal = EX = DM = WB = false;
 		rs_num = rt_num = rd_num = opcode = shamt = func = 0;
 	}
-	void instr_decode(int instru, Control &control, regfile &reg, Instruction &instruction);
 };
 class bufferIFID {
 public:
@@ -76,5 +102,26 @@ public:
 	bufferIFID() {
 		hazard = flash = jump = false;
 	}
-	void instr_fetch(int IniPC,int PC,int instr[], regfile &reg);
+};
+class IFstage {
+public:
+	void instr_fetch(bufferIFID &buf, int instr[], regfile &reg);
+};
+class IDstage {
+public:
+	void instr_decode(bufferIFID bufIFID, bufferIDEX &bufIDEX, Control &control, regfile &reg, Instruction &instruction);
+};
+class EXstage {
+public:
+	void calculate(bufferIDEX bufIDEX,bufferEXDM &bufEXDM,regfile &reg);
+};
+class DMstage {
+public:
+	void deal_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB,int data[],regfile &reg);
+	int read_memory(bufferEXDM bufEXDM,int data[]);
+	int write_memory(bufferEXDM bufEXDM,int data[]);
+};
+class WBstage {
+public:
+	void writeback(bufferDMWB bufDMWB,regfile &reg);
 };

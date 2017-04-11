@@ -1,9 +1,3 @@
 ﻿  simulate.cpp
-  main.cpp
-d:\vs_file\ca_pro2\ca_pro2\main.cpp(23): warning C4244: '=': conversion from 'std::streamoff' to 'long', possible loss of data
-d:\vs_file\ca_pro2\ca_pro2\main.cpp(30): warning C4244: 'initializing': conversion from 'std::streamoff' to 'long', possible loss of data
-d:\vs_file\ca_pro2\ca_pro2\main.cpp(39): warning C4018: '<': signed/unsigned mismatch
-d:\vs_file\ca_pro2\ca_pro2\main.cpp(45): warning C4018: '<': signed/unsigned mismatch
-  Generating Code...
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.exe
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.pdb (Partial PDB)

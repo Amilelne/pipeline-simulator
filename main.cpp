@@ -48,13 +48,16 @@ int main()
 	//initialize regfile
    regfile reg;
    Control control;
+   bufferIFID IFID;
    bufferIDEX IDEX;
+   bufferEXDM EXDM;
+   bufferDMWB DMWB;
    Instruction instru;
+   IDstage IDstage;
    reg.PC = instruction[0];
    reg.SP = data[0];
    reg.IF = instruction[2];
    printf("cycle 0\n");
 	reg.show();
-	control.show();
-	IDEX.instr_decode(instruction[2], control, reg,instru);
+	IDstage.instr_decode(IFID,IDEX, control, reg,instru);
 }

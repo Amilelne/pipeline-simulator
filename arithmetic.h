@@ -1,18 +1,19 @@
+#pragma once
 class ALU {
-private:
-	int rs_data;
-	int rt_data;
-	int ALU_result;
-	int operation;
 public:
-	ALU() {
-		rs_data = 0;
-		rt_data = 0;
-		ALU_result = 0;
-		operation = 0;
+	int add(int rsdata,int rtdata) {
+		int tmp = rsdata + rtdata;
+		return tmp;
 	}
-
-	void ALU_calu() {
-
+	int subtract(int rsdata, int rtdata) {
+		int tmp1 = -rtdata;
+		int tmp2 = rsdata - rtdata;
+		return tmp2;
+	}
+	int and(int rsdata, int rtdata) {
+		return (rsdata&rtdata);
+	}
+	int or (int rsdata, int rtdata) {
+		return (rsdata | rtdata);
 	}
 };
