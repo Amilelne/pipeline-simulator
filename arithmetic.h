@@ -1,6 +1,8 @@
 #pragma once
 class ALU {
 public:
+	int ALU_control;
+public:
 	int add(int rsdata,int rtdata) {
 		int tmp = rsdata + rtdata;
 		return tmp;
@@ -15,5 +17,27 @@ public:
 	}
 	int or (int rsdata, int rtdata) {
 		return (rsdata | rtdata);
+	}
+	int set_on_less_than() {
+		return 0;
+	}
+	int alu(int rsdata, int rtdata) {
+		if (ALU_control == 0x0010) {
+			return add(rsdata, rtdata);
+		}
+		else if (ALU_control == 0x0110) {
+			return subtract(rsdata, rtdata);
+		}
+		else if (ALU_control == 0x0000) {
+			return and (rsdata, rtdata);
+		}
+		else if (ALU_control == 0x0001) {
+			return or (rsdata, rtdata);
+		}
+		else if (ALU_control == 0x0111) {
+			return set_on_less_than();
+		}
+		else
+			return 0;
 	}
 };

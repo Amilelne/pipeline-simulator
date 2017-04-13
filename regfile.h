@@ -39,4 +39,10 @@ public:
 	}
 	void IFOP(int rs,int rt, int &rsdata, int &rtdata);
 	void WBOP(int rt,int data);
+	bool check_end() {
+		if (ID == "HALT"&&EX == "HALT"&&DM == "HALT"&&WB == "HALT")
+			return false;
+		else
+			return true;
+	}
 };

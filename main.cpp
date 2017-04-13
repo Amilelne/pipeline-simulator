@@ -15,8 +15,8 @@ int main()
 	char iimage[] = "iimage.bin";
 	char dimage[] = "dimage.bin";
 	long size;
-	uint32_t instruction[N] = { 0 };
-	uint32_t data[N] = { 0 };
+	int instruction[N] = { 0 };
+	int data[N] = { 0 };
 	int instru_num = 0;
 	int data_num = 0;
 	ifstream file(iimage, ios::in | ios::binary | ios::ate);
@@ -48,16 +48,31 @@ int main()
 	//initialize regfile
    regfile reg;
    Control control;
+   ALUcontrol alucontrol;
    bufferIFID IFID;
    bufferIDEX IDEX;
    bufferEXDM EXDM;
    bufferDMWB DMWB;
    Instruction instru;
+   IFstage IFstage;
    IDstage IDstage;
+   EXstage EXstage;
+   DMstage DMstage;
+   WBstage WBstage;
    reg.PC = instruction[0];
    reg.SP = data[0];
    reg.IF = instruction[2];
-   printf("cycle 0\n");
-	reg.show();
-	IDstage.instr_decode(IFID,IDEX, control, reg,instru);
+   int cnt = 0;
+   while (reg.check_end() != false) {
+	   printf("cycle %d\n",cnt);
+	   cnt++;
+	   //reg.show();	   
+	  // reg.show();
+	   WBstage.writeback(DMWB, reg);
+	   DMstage.deal_memory(EXDM, DMWB, data, reg);
+	   EXstage.calculate(IDEX, EXDM, reg,alucontrol);
+	   IDstage.instr_decode(IFID, IDEX, control, reg, instru);
+	   IFstage.instr_fetch(IFID, instruction, reg);
+	   reg.show();
+   }
 }

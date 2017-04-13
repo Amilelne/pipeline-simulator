@@ -5,6 +5,7 @@ class WB {
 public:
 	bool RegWrite;
 	bool MemtoReg;
+	int rt_num;
 	WB() {
 		RegWrite = false;
 		MemtoReg = false;
@@ -43,7 +44,7 @@ public:
 		RegDst = Jump = Branch = MemRead = MemtoReg = ALUOp = MemWrite = ALUSrc = RegWrite = false;
 	}
 	void show() {
-		printf("control:%d,%d,%d,%d,%d,%d,%d,%d,%d\n", RegDst, Jump, Branch, MemRead, MemtoReg, ALUOp, MemWrite, ALUSrc, RegWrite);
+		printf("control:Regdst=%d,Jump=%d,Branch=%d,Memread=%d,MemtoReg%d,ALUOp=%d,MemWrite=%d,ALUSrc=%d,RegWrite=%d\n", RegDst, Jump, Branch, MemRead, MemtoReg, ALUOp, MemWrite, ALUSrc, RegWrite);
 	}
 	void decode_instr(int opcode);
 	//void trans_to_IDEX(bufferIDEX &buf);
@@ -103,6 +104,40 @@ public:
 		hazard = flash = jump = false;
 	}
 };
+class ALUcontrol {
+public:
+	int ALUOp;
+	int funct;
+	int ALU_control;
+	ALUcontrol() {
+		ALUOp = 0x11;
+	}
+	void get_ALU_control() {
+		if (ALUOp == 0x00)
+			ALU_control = 0x0010;
+		else if (ALUOp == 0x01)
+			ALU_control = 0x0110;
+		else if (ALUOp == 0x10) {
+			switch (funct) {
+			case 0x100000:
+				ALU_control = 0x0010;
+				break;
+			case 0x100010:
+				ALU_control = 0x0110;
+				break;
+			case 0x100100:
+				ALU_control = 0x0000;
+				break;
+			case 0x100101:
+				ALU_control = 0x0001;
+				break;
+			case 0x101010:
+				ALU_control = 0x0111;
+				break;
+			}
+		}
+	}
+};
 class IFstage {
 public:
 	void instr_fetch(bufferIFID &buf, int instr[], regfile &reg);
@@ -113,15 +148,16 @@ public:
 };
 class EXstage {
 public:
-	void calculate(bufferIDEX bufIDEX,bufferEXDM &bufEXDM,regfile &reg);
+	void calculate(bufferIDEX bufIDEX,bufferEXDM &bufEXDM,regfile &reg, ALUcontrol &ALU_c);
 };
 class DMstage {
 public:
 	void deal_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB,int data[],regfile &reg);
-	int read_memory(bufferEXDM bufEXDM,int data[]);
+	int read_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB, int data[]);
 	int write_memory(bufferEXDM bufEXDM,int data[]);
 };
 class WBstage {
 public:
 	void writeback(bufferDMWB bufDMWB,regfile &reg);
 };
+

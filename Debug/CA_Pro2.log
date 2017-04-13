@@ -1,3 +1,6 @@
 ﻿  simulate.cpp
+d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(166): warning C4473: 'printf' : not enough arguments passed for format string
+  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(166): note: placeholders and their parameters expect 2 variadic arguments, but 1 were provided
+  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(166): note: the missing variadic argument 2 is required by format string '%08x'
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.exe
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.pdb (Partial PDB)
