@@ -18,7 +18,6 @@ public:
 	char *DM;
 	char  *WB;
 	bool BranchStall;
-	bool LoadUseStall;
 	int EX_ID_forward;
 	int EX_EX_forward;
 	int DM_EX_forward;
@@ -38,7 +37,6 @@ public:
 		WB = "NOP";
 		overwrite = false;
 		BranchStall = false;
-		LoadUseStall = false;
 		writeback = false;
 		EX_ID_forward = EX_EX_forward = DM_EX_forward = 0;
 		for_rt_num = 0;
@@ -51,12 +49,19 @@ public:
 		printf("$HI: 0x%08X\n", reg[32]);
 		fprintf(snapshot,"$HI: 0x%08X\n", reg[32]);
 		printf("$LO: 0x%08X\n", reg[33]);
+		fprintf(snapshot,"$LO: 0x%08X\n", reg[33]);
 		printf("$PC: 0x%08X\n", PC-4);
+		fprintf(snapshot,"$PC: 0x%08X\n", PC - 4);
 		printf("$IF: 0x%08X\n", IF);
+		fprintf(snapshot,"$IF: 0x%08X\n", IF);
 		printf("$ID: %s\n", ID);
+		fprintf(snapshot,"$ID: %s\n", ID);
 		printf("$EX: %s\n", EX);
+		fprintf(snapshot,"$EX: %s\n", EX);
 		printf("$DM: %s\n", DM);
+		fprintf(snapshot,"$DM: %s\n", DM);
 		printf("$WB: %s\n", WB);
+		fprintf(snapshot,"$WB: %s\n\n\n", WB);
 		for (int i = 0; i < 34; i++)
 			copyreg[i] = reg[i];
 	}
@@ -64,15 +69,23 @@ public:
 		for (int i = 0; i < 32; i++)
 			if (i == num&&reg[i]!=copyreg[i]) {
 				printf("$%02d: 0x%08X\n", i, reg[i]);
+				fprintf(snapshot,"$%02d: 0x%08X\n", i, reg[i]);
 			}
-		if(num==32 && reg[32]!=copyreg[32])
+		if (num == 32 && reg[32] != copyreg[32]) {
 			printf("$HI: 0x%08X\n", reg[32]);
-		if (num == 33 && reg[33] != copyreg[33])
+			fprintf(snapshot,"$HI: 0x%08X\n", reg[32]);
+		}
+		if (num == 33 && reg[33] != copyreg[33]) {
 			printf("$LO: 0x%08X\n", reg[33]);
+			fprintf(snapshot,"$LO: 0x%08X\n", reg[33]);
+		}
 		printf("$PC: 0x%08X\n", PC-4);
-		if (BranchStall||LoadUseStall) {
+		fprintf(snapshot,"$PC: 0x%08X\n", PC - 4);
+		if (BranchStall) {
 			printf("$IF: 0x%08X to_be_stalled\n", IF);
+			fprintf(snapshot,"$IF: 0x%08X to_be_stalled\n", IF);
 			printf("$ID: %s to_be_stalled\n", ID);
+			fprintf(snapshot,"$ID: %s to_be_stalled\n", ID);
 			ID = "NOP";
 			PC = PC - 4;
 		}
@@ -81,15 +94,21 @@ public:
 			{
 			case 1:
 				printf("$IF: 0x%08X\n", IF);
+				fprintf(snapshot,"$IF: 0x%08X\n", IF);
 				printf("$ID: %s fwd_EX-DM_rs_$%d\n", ID,for_rt_num);
+				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d\n", ID, for_rt_num);
 				break;
 			case 2:
 				printf("$IF: 0x%08X\n", IF);
+				fprintf(snapshot,"$IF: 0x%08X\n", IF);
 				printf("$ID: %s fwd_EX-DM_rt_$%d\n", ID, for_rt_num);
+				fprintf(snapshot,"$ID: %s fwd_EX-DM_rt_$%d\n", ID, for_rt_num);
 				break;
 			case 3:
 				printf("$IF: 0x%08X\n", IF);
+				fprintf(snapshot,"$IF: 0x%08X\n", IF);
 				printf("$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", for_rt_num, for_rt_num);
+				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", for_rt_num, for_rt_num);
 				break;
 			default:
 				break;
@@ -97,15 +116,45 @@ public:
 		}
 		else {
 			printf("$IF: 0x%08X\n", IF);
+			fprintf(snapshot,"$IF: 0x%08X\n", IF);
 			printf("$ID: %s\n", ID);
+			fprintf(snapshot,"$ID: %s\n", ID);
 		}
-		printf("$EX: %s\n", EX);
+		if (DM_EX_forward) {
+			switch (DM_EX_forward)
+			{
+			case 4:
+				printf("$EX: %s fwd_DM-WB_rs_$%d\n", EX,for_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d\n", EX, for_rt_num);
+				break;
+			case 7:
+				printf("$EX: %s fwd_DM-WB_rt_$%d\n", EX, for_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rt_$%d\n", EX, for_rt_num);
+				break;
+			case 11:
+				printf("$EX: %s fwd_DM-WB_rs_$%d fwd_DM-WB_rt_$%d\n", EX, for_rt_num, for_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d fwd_DM-WB_rt_$%d\n", EX, for_rt_num, for_rt_num);
+				break;
+			default:
+				break;
+			}
+			printf("$EX: %s\n", EX);
+			fprintf(snapshot, "$EX: %s\n", EX);
+		}
+		else {
+			printf("$EX: %s\n", EX);
+			fprintf(snapshot, "$EX: %s\n", EX);
+		}
 		printf("$DM: %s\n", DM);
+		fprintf(snapshot,"$DM: %s\n", DM);
 		printf("$WB: %s\n", WB);
+		fprintf(snapshot,"$WB: %s\n\n\n", WB);
 		for (int i = 0; i < 34; i++)
 			copyreg[i] = reg[i];
-		if (writeback)
+		if (writeback) {
 			reg[wb_num] = wb_data;
+			printf("%%%%####wb_num,wb_data=%d,%d\n", wb_num, wb_data);
+		}		
 	}
 	void IFOP(int rs,int rt, int &rsdata, int &rtdata);
 	void WBOP(int rt,int data);

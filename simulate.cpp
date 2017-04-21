@@ -25,7 +25,7 @@ void IFstage::instr_fetch(bufferIFID &buf,int instr[],regfile &reg) {
 	reg.IF = instr[tmp / 4 + 2];
 	reg.PC = reg.PC + 4;
 	printf("########reg.IF=%8x,tmp=%d\n******", reg.IF,tmp);
-	if (!(reg.BranchStall || reg.LoadUseStall)) {
+	if (!reg.BranchStall) {
 		buf.PC = tmp;
 		buf.instr = instr[tmp / 4 + 2];
 		buf.opcode = (0xfc000000 & buf.instr) >> 26;
@@ -40,7 +40,7 @@ void IFstage::instr_fetch(bufferIFID &buf,int instr[],regfile &reg) {
 void IDstage::instr_decode(bufferIFID bufIFID,bufferIDEX &bufIDEX,bufferEXDM bufEXDM,Control &control,regfile &reg,Instruction &instruction) {
 	int real_instr = bufIFID.instr;
 	printf("######bufIFID.instr=%08x\n####", real_instr);
-	if (reg.BranchStall || reg.LoadUseStall) {
+	if (reg.BranchStall) {
 		instruction.getname(bufIFID.opcode, bufIFID.func);
 		reg.ID = instruction.ID;
 		real_instr = 0;
@@ -87,7 +87,7 @@ void IDstage::instr_decode(bufferIFID bufIFID,bufferIDEX &bufIDEX,bufferEXDM buf
 	bufIDEX.wb.rt_num = secondreg_num;
 	bufIDEX.m.MemWrite = control.MemWrite;
 	bufIDEX.wb.RegWrite = control.RegWrite;
-	if(!(reg.BranchStall || reg.LoadUseStall))
+	if(!reg.BranchStall)
 		reg.ID = instruction.ID;
 	instruction.show();
 }

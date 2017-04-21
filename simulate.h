@@ -228,6 +228,8 @@ public:
 			else
 				return false;
 		}
+		if (bufIDEX.m.MemRead && ((bufIDEX.wb.rt_num == bufIFID.rs_num) || (bufIDEX.wb.rt_num == bufIFID.rt_num)))
+			return true;
 		return false;
 	}
 	bool Load_Use_Hazard(bufferIDEX bufIDEX, bufferEXDM bufEXDM) {
@@ -248,11 +250,11 @@ public:
 		return (ForwardA+ForwardB);
 	}
 	int MEM_hazard(bufferDMWB bufDMWB, bufferIDEX bufIDEX, bufferEXDM bufEXDM,regfile &reg) {
-		if (bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufEXDM.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rs_num))
+		if (bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufDMWB.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rs_num))
 			ForwardA = 4;
 		else
 			ForwardA = 0;
-		if (bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufEXDM.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rs_num))
+		if (bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufDMWB.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rt_num))
 			ForwardB = 7;
 		else
 			ForwardB = 0;

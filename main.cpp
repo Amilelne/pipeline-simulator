@@ -69,15 +69,22 @@ int main()
    int oldrt_num = -1;
    while (reg.check_end() != false) {
 	   printf("cycle %d\n",cnt);
+	   fprintf(snapshot,"cycle %d\n", cnt);
 	   //reg.show();	   
 	  // reg.show();
 	   reg.BranchStall = hazard.Branch_Hazard(IFID,IDEX,EXDM);
-	   reg.LoadUseStall = hazard.Load_Use_Hazard(IDEX, EXDM);
-	   if (!(reg.BranchStall&&reg.LoadUseStall)) {
+	   if (!reg.BranchStall) {
 		   printf("NO stalled\n");
-		   reg.for_rt_num = EXDM.wb.rt_num;
+		   
 		   reg.EX_ID_forward = hazard.EX_ID_hazard(IFID, IDEX, EXDM, reg);
-		   printf("!@#$%^%d\n", reg.EX_ID_forward);
+		   reg.DM_EX_forward = hazard.MEM_hazard(DMWB, IDEX, EXDM, reg);
+		   reg.EX_EX_forward = hazard.EX_hazard(EXDM,IDEX,reg);
+		   if(reg.EX_ID_forward)
+			   reg.for_rt_num = EXDM.wb.rt_num;
+		   if (reg.DM_EX_forward)
+			   reg.for_rt_num = DMWB.wb.rt_num;
+		   if (reg.EX_EX_forward)
+			   reg.for_rt_num = EXDM.wb.rt_num;
 	   }
 	   WBstage.writeback(DMWB, reg);
 	   int rt_num = DMWB.wb.rt_num;
