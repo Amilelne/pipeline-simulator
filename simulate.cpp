@@ -3,6 +3,7 @@
 #include "Instruction.h"
 #include<iostream>
 #include "arithmetic.h"
+#include<string>
 using namespace std;
 ALU alu;
 bufferDMWB::bufferDMWB() {
@@ -22,35 +23,73 @@ void IFstage::instr_fetch(bufferIFID &buf,int instr[],regfile &reg) {
 	if (tmp % 4 != 0)
 		exit(0);
 	reg.IF = instr[tmp / 4 + 2];
-	buf.PC = tmp;
-	buf.instr = instr[tmp / 4 + 2];
 	reg.PC = reg.PC + 4;
+	printf("########reg.IF=%8x,tmp=%d\n******", reg.IF,tmp);
+	if (!(reg.BranchStall || reg.LoadUseStall)) {
+		buf.PC = tmp;
+		buf.instr = instr[tmp / 4 + 2];
+		buf.opcode = (0xfc000000 & buf.instr) >> 26;
+		buf.func = (0x0000003f & buf.instr);
+		buf.rs_num = (0x03e00000 & buf.instr) >> 21;
+		buf.rt_num = (0x001f0000 & buf.instr) >> 16;
+		buf.rd_num = (0x0000f800 & buf.instr) >> 11;
+		buf.immediate = (0x0000ffff & buf.instr);
+	}
 	//printf("instr=%08x,address = %d\n", instr[tmp / 4 + 2], tmp/4+2);
 }
-void IDstage::instr_decode(bufferIFID bufIFID,bufferIDEX &bufIDEX,Control &control,regfile &reg,Instruction &instruction) {
-	bufIDEX.opcode = (0xfc000000 & bufIFID.instr) >> 26;
-	bufIDEX.func = (0x0000003f & bufIFID.instr);
-	bufIDEX.rs_num = (0x03e00000 & bufIFID.instr) >> 21;
-	bufIDEX.rt_num = (0x001f0000 & bufIFID.instr) >> 16;
-	bufIDEX.rd_num = (0x0000f800 & bufIFID.instr) >> 11;
-	bufIDEX.immediate = (0x0000ffff & bufIFID.instr);
-	bufIDEX.rsdata = reg.reg[bufIDEX.rs_num];
-	bufIDEX.rtdata = reg.reg[bufIDEX.rt_num];
-	instruction.getname(bufIDEX.opcode, bufIDEX.func);
-	printf("opcode=%d,funct=%d\n",bufIDEX. opcode, bufIDEX.func);
-	printf("instruction.ID=%s\n", instruction.ID);
-	control.decode_instr(bufIDEX.opcode);
+void IDstage::instr_decode(bufferIFID bufIFID,bufferIDEX &bufIDEX,bufferEXDM bufEXDM,Control &control,regfile &reg,Instruction &instruction) {
+	int real_instr = bufIFID.instr;
+	printf("######bufIFID.instr=%08x\n####", real_instr);
+	if (reg.BranchStall || reg.LoadUseStall) {
+		instruction.getname(bufIFID.opcode, bufIFID.func);
+		reg.ID = instruction.ID;
+		real_instr = 0;
+	}
+	//printf("*********stall=%d,real_instr=%08x**********\n", stall,real_instr);
+	control.decode_instr((0xfc000000 & real_instr) >> 26);
 	control.show();
+	int secondreg_num = -1;
+	if (control.RegDst)
+		secondreg_num = (0x0000f800 & real_instr) >> 11;
+	else
+		secondreg_num = (0x001f0000 & real_instr) >> 16;
+	bufIDEX.opcode = (0xfc000000 & real_instr) >> 26;
+	bufIDEX.func = (0x0000003f & real_instr);
+	bufIDEX.rs_num = (0x03e00000 & real_instr) >> 21;
+	bufIDEX.rt_num = (0x001f0000 & real_instr) >> 16;
+	bufIDEX.rd_num = (0x0000f800 & real_instr) >> 11;
+	bufIDEX.immediate = (0x0000ffff & real_instr);
+	if (reg.EX_ID_forward == 0) {
+		bufIDEX.rsdata = reg.reg[bufIDEX.rs_num];
+		bufIDEX.rtdata = reg.reg[bufIDEX.rt_num];
+	}
+	else if (reg.EX_ID_forward == 1) {
+		bufIDEX.rsdata = bufEXDM.ALU_result;
+		bufIDEX.rtdata = reg.reg[bufIDEX.rt_num];
+	}
+	else if (reg.EX_ID_forward == 2) {
+		bufIDEX.rsdata = reg.reg[bufIDEX.rs_num];
+		bufIDEX.rtdata = bufEXDM.ALU_result;
+	}
+	else if (reg.EX_ID_forward == 3) {
+		bufIDEX.rsdata = bufEXDM.ALU_result;
+		bufIDEX.rtdata = bufEXDM.ALU_result;
+	}
+	if (real_instr == 0)
+		instruction.ID = "NOP";
+	else
+		instruction.getname(bufIDEX.opcode, bufIDEX.func);
 	bufIDEX.ex.ALUOp = control.ALUOp;
 	bufIDEX.ex.RegDst = control.RegDst;
 	bufIDEX.ex.ALUSrc = control.ALUSrc;
 	bufIDEX.m.MemRead = control.MemRead;
 	bufIDEX.wb.MemtoReg = control.MemtoReg;
-	bufIDEX.wb.rt_num = (0x03e00000 & bufIFID.instr) >> 21;
+	bufIDEX.wb.rt_num = secondreg_num;
 	bufIDEX.m.MemWrite = control.MemWrite;
 	bufIDEX.wb.RegWrite = control.RegWrite;
-	reg.ID = instruction.ID;
-	printf("instr=%x,%x,%d,%d,%d,%x,%x,%x", bufIFID.instr,bufIDEX.opcode, bufIDEX.rs_num, bufIDEX.rt_num, bufIDEX.rd_num, bufIDEX.immediate, bufIDEX.rsdata, bufIDEX.rtdata);
+	if(!(reg.BranchStall || reg.LoadUseStall))
+		reg.ID = instruction.ID;
+	instruction.show();
 }
 void Control::decode_instr(int opcode) {
 	if (opcode == 0) {
@@ -93,6 +132,9 @@ void Control::decode_instr(int opcode) {
 		ALUOp = 0x00;
 		MemtoReg = 0;
 	}
+	else {
+		RegWrite = 0;
+	}
 }
 /*
 void Control::trans_to_IDEX(bufferIDEX &buf) {
@@ -116,24 +158,6 @@ void EXstage::calculate(bufferIDEX bufIDEX, bufferEXDM &bufEXDM,regfile &reg,ALU
 	else
 		second_data = bufIDEX.immediate;
 	result = alu.alu(bufIDEX.rsdata, second_data);
-	printf("bufIDEX.rsdata=%d,rt_data=%d\n", bufIDEX.rsdata, second_data);
-	/*
-	switch (bufIDEX.ex.ALUOp) {
-	case 0x0010:
-		result = alu.add(bufIDEX.rsdata, second_data);
-		break;
-	case 0x0110:
-		result = alu.subtract(bufIDEX.rsdata, second_data);
-		break;
-	case 0x0000:
-		result = alu. and (bufIDEX.rsdata, second_data);
-		break;
-	case 0x0001:
-		result = alu. or (bufIDEX.rsdata, second_data);
-		break;
-	case 0x0111:
-		break;
-	}*/
 	bufEXDM.ALU_result = result;
 	bufEXDM.rtdata = bufIDEX.rtdata;
 	bufEXDM.wb = bufIDEX.wb;
@@ -141,6 +165,7 @@ void EXstage::calculate(bufferIDEX bufIDEX, bufferEXDM &bufEXDM,regfile &reg,ALU
 	bufEXDM.opcode = bufIDEX.opcode;
 	reg.EX = reg.ID;
 }
+
 void DMstage::deal_memory(bufferEXDM bufEXDM, bufferDMWB &bufDMWB,int data[],regfile &reg) {
 	int readdata = 0;
 	if (bufEXDM.m.MemRead) {
@@ -195,12 +220,19 @@ int DMstage::write_memory(bufferEXDM bufEXDM, int data[]) {
 }
 void WBstage::writeback(bufferDMWB bufDMWB,regfile &reg) {
 	reg.WB = reg.DM;
-	if (bufDMWB.wb.RegWrite)
-		if (bufDMWB.wb.MemtoReg) 
-			reg.reg[bufDMWB.wb.rt_num-1] = bufDMWB.data;
-		else
-			reg.reg[bufDMWB.wb.rt_num-1] = bufDMWB.ALU_result;
+	if (bufDMWB.wb.RegWrite) {
+		reg.writeback = true;
+		if (bufDMWB.wb.MemtoReg) {
+			//reg.reg[bufDMWB.wb.rt_num] = bufDMWB.data;
+			reg.wb_num = bufDMWB.wb.rt_num;
+			reg.wb_data = bufDMWB.data;
+		}
+		else {
+			//reg.reg[bufDMWB.wb.rt_num] = bufDMWB.ALU_result;
+			reg.wb_num = bufDMWB.wb.rt_num;
+			reg.wb_data = bufDMWB.ALU_result;
+		}
+	}
 	else
-		reg.WB = reg.DM;
-	printf("bufDMWB.wb.RegWrite=%d,MemtoReg=%d,rt_num=%d,data=%08x\n", bufDMWB.wb.RegWrite, bufDMWB.wb.MemtoReg, bufDMWB.wb.rt_num, bufDMWB.data);
+		reg.writeback = false;
 }

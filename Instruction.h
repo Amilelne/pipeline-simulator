@@ -59,6 +59,9 @@ public:
 			case 0x12:
 				ID = "MFLO";
 				break;
+			default:
+				ID = "NOP";
+				break;
 			}
 		}
 		else if (opcode == 0x02 || opcode == 0x03) 
