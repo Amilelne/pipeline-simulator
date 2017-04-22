@@ -108,7 +108,7 @@ int main()
 	   }
 	   WBstage.writeback(DMWB, reg);
 	   rt_num = DMWB.wb.rt_num;
-	   DMstage.deal_memory(EXDM, DMWB, data, reg);
+	   DMstage.deal_memory(IDEX,EXDM, DMWB, data, reg);
 	   DMWB.show();
 	   EXstage.calculate(IDEX, EXDM,DMWB, reg,alucontrol,snapshot,nop);
 	   EXDM.show();

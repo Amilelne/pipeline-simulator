@@ -109,7 +109,6 @@ public:
 	int rsdata;
 	int rtdata;
 	int PC;
-	int sign_extend;
 	int rs_num;
 	int rt_num;
 	int rd_num;
@@ -117,23 +116,25 @@ public:
 	int shamt;
 	int func;
 	int immediate;
+	int forward_from_DMWB;
 	bool equal;
 	EX ex;
 	M m;
 	WB wb;
 public:
 	bufferIDEX() {
-		rs_num = rt_num = rd_num = opcode = shamt = func = 0;
+		rs_num = rt_num = rd_num = opcode = shamt = func = forward_from_DMWB = 0;
 		equal = false;
 	}
 	void show() {
 		printf("---------------------------IDEX-----------------\n");
-		printf("rsdata=%08x,rtdata=%08x,PC=%d,sign_extend=%d\n", rsdata, rtdata, PC, sign_extend);
+		printf("rsdata=%08x,rtdata=%08x,PC=%d\n", rsdata, rtdata, PC);
 		printf("rs_num=%d,rt_num=%d,rd_num=%d,opcode=%x,func=%x,shamt=%x,immediate=%x,equal=%d\n", rs_num, rt_num, rd_num, opcode, func, shamt, immediate, equal);
 		ex.show();
 		m.show();
 		wb.show();
 	}
+	void forward_DMWB(bufferDMWB bufDMWB);
 };
 class bufferIFID {
 public:
@@ -213,7 +214,7 @@ public:
 };
 class DMstage {
 public:
-	void deal_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB,int data[],regfile &reg);
+	void deal_memory(bufferIDEX &bufIDEX, bufferEXDM bufEXDM,bufferDMWB &bufDMWB,int data[],regfile &reg);
 	int read_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB, int data[]);
 	int write_memory(bufferEXDM bufEXDM,int data[]);
 };

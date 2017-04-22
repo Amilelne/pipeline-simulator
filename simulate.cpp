@@ -134,6 +134,26 @@ void Control::decode_instr(int opcode) {
 		ALUOp = 0x00;
 		MemtoReg = 0;
 	}
+	else if (opcode == 0x0C || opcode == 0x0A || opcode == 0x0D || opcode == 0x0E) {
+		RegDst = 0;
+		Branch = 0;
+		MemRead = 0;
+		MemtoReg = 0;
+		ALUOp = 0x11;
+		MemWrite = 0;
+		ALUSrc = 0;
+		RegWrite = 1;
+	}
+	else if (opcode == 0x0F) {
+		RegDst = 0;
+		Branch = 0;
+		MemRead = 0;
+		MemtoReg = 0;
+		ALUOp = 0x11;
+		MemWrite = 0;
+		ALUSrc = 1;
+		RegWrite = 1;
+	}
 	else {
 		RegWrite = 0;
 	}
@@ -163,22 +183,22 @@ void EXstage::calculate(bufferIDEX &bufIDEX, bufferEXDM &bufEXDM,bufferDMWB bufD
 			bufIDEX.rtdata = bufEXDM.ALU_result;
 			break;
 		case 4:
-			bufIDEX.rsdata = bufDMWB.write_data;
+			bufIDEX.rsdata = bufIDEX.forward_from_DMWB;
 			break;
 		case 7:
-			bufIDEX.rtdata = bufDMWB.write_data;
+			bufIDEX.rtdata = bufIDEX.forward_from_DMWB;
 			break;
 		case 11:
-			bufIDEX.rsdata = bufDMWB.write_data;
-			bufIDEX.rtdata = bufDMWB.write_data;
+			bufIDEX.rsdata = bufIDEX.forward_from_DMWB;
+			bufIDEX.rtdata = bufIDEX.forward_from_DMWB;
 			break;
 		case 6:
-			bufIDEX.rsdata = bufDMWB.write_data;
+			bufIDEX.rsdata = bufIDEX.forward_from_DMWB;
 			bufIDEX.rtdata = bufEXDM.ALU_result;
 			break;
 		case 8:
 			bufIDEX.rsdata = bufEXDM.ALU_result;
-			bufIDEX.rtdata = bufDMWB.write_data;
+			bufIDEX.rtdata = bufIDEX.forward_from_DMWB;
 			break;
 		}
 	}
@@ -206,6 +226,32 @@ void EXstage::calculate(bufferIDEX &bufIDEX, bufferEXDM &bufEXDM,bufferDMWB bufD
 		bufEXDM.rtdata = 0;
 		bufEXDM.wb = nop.wb;
 		bufEXDM.m = nop.m;
+		bufEXDM.opcode = bufIDEX.opcode;
+		reg.EX = reg.ID;
+	}
+	else if (bufIDEX.opcode == 0x0F || bufIDEX.opcode == 0x0A || bufIDEX.opcode == 0x0C || bufIDEX.opcode == 0x0D || bufIDEX.opcode == 0x0E) {
+		switch (bufIDEX.opcode)
+		{
+		case 0x0F:
+			bufEXDM.ALU_result = bufIDEX.immediate << 16;
+			break;
+		case 0x0A:
+			bufEXDM.ALU_result = (bufIDEX.rsdata < bufIDEX.immediate);
+			break;
+		case 0x0C:
+			bufEXDM.ALU_result = bufIDEX.rsdata &(0x0000ffff & bufIDEX.immediate);
+			break;
+		case 0x0D:
+			bufEXDM.ALU_result = bufIDEX.rsdata | (0xffff & bufIDEX.immediate);
+			break;
+		case 0x0E:
+			bufEXDM.ALU_result = ~(bufIDEX.rsdata | (0xffff & bufIDEX.immediate));
+			break;
+		default:
+			break;
+		}
+		bufEXDM.wb = bufIDEX.wb;
+		bufEXDM.m = bufIDEX.m;
 		bufEXDM.opcode = bufIDEX.opcode;
 		reg.EX = reg.ID;
 	}
@@ -238,8 +284,9 @@ void EXstage::calculate(bufferIDEX &bufIDEX, bufferEXDM &bufEXDM,bufferDMWB bufD
 	}
 }
 
-void DMstage::deal_memory(bufferEXDM bufEXDM, bufferDMWB &bufDMWB,int data[],regfile &reg) {
+void DMstage::deal_memory(bufferIDEX &bufIDEX,bufferEXDM bufEXDM, bufferDMWB &bufDMWB,int data[],regfile &reg) {
 	int readdata = 0;
+	bufIDEX.forward_from_DMWB = bufDMWB.write_data;
 	if (bufEXDM.m.MemRead) {
 		bufDMWB.data = read_memory(bufEXDM,bufDMWB, data);
 	}
