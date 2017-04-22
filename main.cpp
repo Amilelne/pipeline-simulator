@@ -62,36 +62,58 @@ int main()
    EXstage EXstage;
    DMstage DMstage;
    WBstage WBstage;
+   NOP nop;
+   reg.IniPC = instruction[0];
    reg.PC = instruction[0];
    reg.SP = data[0];
    reg.IF = instruction[2];
    int cnt = 0;
-   int oldrt_num = -1;
+   int rt_num = -1;
    while (reg.check_end() != false) {
 	   printf("cycle %d\n",cnt);
 	   fprintf(snapshot,"cycle %d\n", cnt);
+	   if (reg.writeback) {
+		   if (reg.write0)
+			   fprintf(error_file, "In cycle %d: Write $0 Error\n", cnt);
+		   else
+			   for (int i = 1; i < 32; i++)
+				   if (i == rt_num&&reg.reg[i] != reg.wb_data) {
+					   printf("$%02d: 0x%08X\n", i, reg.reg[i]);
+					   fprintf(snapshot, "$%02d: 0x%08X\n", i, reg.reg[i]);
+				   }  
+	   }
+	   if (reg.mult) {
+		   if (reg.HI_data != reg.reg[32]) {
+			   printf("$HI: 0x%08X\n", reg.reg[32]);
+			   fprintf(snapshot, "$HI: 0x%08X\n", reg.reg[32]);
+		   }
+		   if (reg.LO_data != reg.reg[33]) {
+			   printf("$LO: 0x%08X\n", reg.reg[33]);
+			   fprintf(snapshot, "$LO: 0x%08X\n", reg.reg[33]);
+		   }
+	   }
 	   //reg.show();	   
 	  // reg.show();
 	   reg.BranchStall = hazard.Branch_Hazard(IFID,IDEX,EXDM);
 	   if (!reg.BranchStall) {
-		   printf("NO stalled\n");
-		   
 		   reg.EX_ID_forward = hazard.EX_ID_hazard(IFID, IDEX, EXDM, reg);
 		   reg.DM_EX_forward = hazard.MEM_hazard(DMWB, IDEX, EXDM, reg);
 		   reg.EX_EX_forward = hazard.EX_hazard(EXDM,IDEX,reg);
 		   if(reg.EX_ID_forward)
-			   reg.for_rt_num = EXDM.wb.rt_num;
+			   reg.EX_ID_rt_num = EXDM.wb.rt_num;
 		   if (reg.DM_EX_forward)
-			   reg.for_rt_num = DMWB.wb.rt_num;
+			   reg.DM_EX_rt_num = DMWB.wb.rt_num;
 		   if (reg.EX_EX_forward)
-			   reg.for_rt_num = EXDM.wb.rt_num;
+			   reg.EX_EX_rt_num = EXDM.wb.rt_num;
 	   }
 	   WBstage.writeback(DMWB, reg);
-	   int rt_num = DMWB.wb.rt_num;
+	   rt_num = DMWB.wb.rt_num;
 	   DMstage.deal_memory(EXDM, DMWB, data, reg);
 	   DMWB.show();
-	   EXstage.calculate(IDEX, EXDM, reg,alucontrol);
+	   EXstage.calculate(IDEX, EXDM,DMWB, reg,alucontrol,snapshot,nop);
 	   EXDM.show();
+	   if (reg.overwrite > 1)
+		   fprintf(error_file, "In cycle %d: Overwrite HI-LO registers\n", cnt+1);
 	   IDstage.instr_decode(IFID, IDEX,EXDM, control, reg, instru);
 	   IDEX.show();
 	   IFstage.instr_fetch(IFID, instruction, reg);
@@ -100,9 +122,9 @@ int main()
 	   if (cnt == 0)
 		   reg.showall(snapshot);
 	   else
-		 reg.show(oldrt_num,snapshot);
+		 reg.show(snapshot);
+	   printf("#####$$$$$$reg.overwrite=%d\n\n", reg.overwrite);
 	   cnt++;
-	   oldrt_num = rt_num;
    }
    fclose(snapshot);
    fclose(error_file);

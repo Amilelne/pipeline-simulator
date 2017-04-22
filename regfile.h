@@ -5,9 +5,8 @@ using namespace std;
 class regfile {
 public:
 	int reg[34];
-	int copyreg[34];
 	//detect HI and LO
-	bool overwrite;
+	int overwrite;
 	int IniPC;
 	int PC;
 	int IF;
@@ -21,10 +20,16 @@ public:
 	int EX_ID_forward;
 	int EX_EX_forward;
 	int DM_EX_forward;
-	int for_rt_num;
+	int EX_ID_rt_num;
+	int EX_EX_rt_num;
+	int DM_EX_rt_num;
 	int wb_num;
 	int wb_data;
+	int HI_data;
+	int LO_data;
 	bool writeback;
+	bool mult;
+	bool write0;
 public:
 	regfile() {
 		reg[34] = { 0 };
@@ -35,11 +40,14 @@ public:
 		EX = "NOP";
 		DM = "NOP";
 		WB = "NOP";
-		overwrite = false;
+		overwrite = 0;
 		BranchStall = false;
 		writeback = false;
+		mult = false;
+		write0 = false;
 		EX_ID_forward = EX_EX_forward = DM_EX_forward = 0;
-		for_rt_num = 0;
+		EX_ID_rt_num = EX_EX_rt_num= DM_EX_rt_num = 0;
+		HI_data = LO_data = 0;
 	}
 	void showall(FILE* &snapshot) {
 		for (int i = 0; i < 32; i++) {
@@ -62,23 +70,14 @@ public:
 		fprintf(snapshot,"$DM: %s\n", DM);
 		printf("$WB: %s\n", WB);
 		fprintf(snapshot,"$WB: %s\n\n\n", WB);
-		for (int i = 0; i < 34; i++)
-			copyreg[i] = reg[i];
 	}
-	void show(int num, FILE* &snapshot) {
+	void show(FILE* &snapshot) {
+		/*
 		for (int i = 0; i < 32; i++)
 			if (i == num&&reg[i]!=copyreg[i]) {
 				printf("$%02d: 0x%08X\n", i, reg[i]);
 				fprintf(snapshot,"$%02d: 0x%08X\n", i, reg[i]);
-			}
-		if (num == 32 && reg[32] != copyreg[32]) {
-			printf("$HI: 0x%08X\n", reg[32]);
-			fprintf(snapshot,"$HI: 0x%08X\n", reg[32]);
-		}
-		if (num == 33 && reg[33] != copyreg[33]) {
-			printf("$LO: 0x%08X\n", reg[33]);
-			fprintf(snapshot,"$LO: 0x%08X\n", reg[33]);
-		}
+			}*/
 		printf("$PC: 0x%08X\n", PC-4);
 		fprintf(snapshot,"$PC: 0x%08X\n", PC - 4);
 		if (BranchStall) {
@@ -95,20 +94,20 @@ public:
 			case 1:
 				printf("$IF: 0x%08X\n", IF);
 				fprintf(snapshot,"$IF: 0x%08X\n", IF);
-				printf("$ID: %s fwd_EX-DM_rs_$%d\n", ID,for_rt_num);
-				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d\n", ID, for_rt_num);
+				printf("$ID: %s fwd_EX-DM_rs_$%d\n", ID,EX_ID_rt_num);
+				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d\n", ID, EX_ID_rt_num);
 				break;
 			case 2:
 				printf("$IF: 0x%08X\n", IF);
 				fprintf(snapshot,"$IF: 0x%08X\n", IF);
-				printf("$ID: %s fwd_EX-DM_rt_$%d\n", ID, for_rt_num);
-				fprintf(snapshot,"$ID: %s fwd_EX-DM_rt_$%d\n", ID, for_rt_num);
+				printf("$ID: %s fwd_EX-DM_rt_$%d\n", ID, EX_ID_rt_num);
+				fprintf(snapshot,"$ID: %s fwd_EX-DM_rt_$%d\n", ID, EX_ID_rt_num);
 				break;
 			case 3:
 				printf("$IF: 0x%08X\n", IF);
 				fprintf(snapshot,"$IF: 0x%08X\n", IF);
-				printf("$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", for_rt_num, for_rt_num);
-				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", for_rt_num, for_rt_num);
+				printf("$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX_ID_rt_num, EX_ID_rt_num);
+				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX_ID_rt_num, EX_ID_rt_num);
 				break;
 			default:
 				break;
@@ -120,26 +119,45 @@ public:
 			printf("$ID: %s\n", ID);
 			fprintf(snapshot,"$ID: %s\n", ID);
 		}
-		if (DM_EX_forward) {
-			switch (DM_EX_forward)
+		if (DM_EX_forward || EX_EX_forward) {
+			int forward = DM_EX_forward + EX_EX_forward;
+			switch (forward)
 			{
+			case 1:
+				printf("$EX: %s fwd_EX-DM_rs_$%d\n", EX, EX_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_EX-DM_rs_$%d\n", EX, EX_EX_rt_num);
+				break;
+			case 2:
+				printf("$EX: %s fwd_EX-DM_rt_$%d\n", EX, EX_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_EX-DM_rt_$%d\n", EX, EX_EX_rt_num);
+				break;
+			case 3:
+				printf("$EX: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX, EX_EX_rt_num, EX_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX, EX_EX_rt_num, EX_EX_rt_num);
+				break;
 			case 4:
-				printf("$EX: %s fwd_DM-WB_rs_$%d\n", EX,for_rt_num);
-				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d\n", EX, for_rt_num);
+				printf("$EX: %s fwd_DM-WB_rs_$%d\n", EX,DM_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d\n", EX, DM_EX_rt_num);
 				break;
 			case 7:
-				printf("$EX: %s fwd_DM-WB_rt_$%d\n", EX, for_rt_num);
-				fprintf(snapshot, "$EX: %s fwd_DM-WB_rt_$%d\n", EX, for_rt_num);
+				printf("$EX: %s fwd_DM-WB_rt_$%d\n", EX, DM_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rt_$%d\n", EX, DM_EX_rt_num);
 				break;
 			case 11:
-				printf("$EX: %s fwd_DM-WB_rs_$%d fwd_DM-WB_rt_$%d\n", EX, for_rt_num, for_rt_num);
-				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d fwd_DM-WB_rt_$%d\n", EX, for_rt_num, for_rt_num);
+				printf("$EX: %s fwd_DM-WB_rs_$%d fwd_DM-WB_rt_$%d\n", EX, DM_EX_rt_num, DM_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d fwd_DM-WB_rt_$%d\n", EX, DM_EX_rt_num, DM_EX_rt_num);
+				break;
+			case 6:
+				printf("$EX: %s fwd_DM-WB_rs_$%d fwd_EX-DM_rt_$%d\n", EX, DM_EX_rt_num, EX_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_DM-WB_rs_$%d fwd_EX-DM_rt_$%d\n", EX, DM_EX_rt_num, EX_EX_rt_num);
+				break;
+			case 8:
+				printf("$EX: %s fwd_EX-DM_rs_$%d fwd_DM-WB_rt_$%d\n", EX, EX_EX_rt_num, DM_EX_rt_num);
+				fprintf(snapshot, "$EX: %s fwd_EX-DM_rs_$%d fwd_DM-WB_rt_$%d\n", EX, EX_EX_rt_num, DM_EX_rt_num);
 				break;
 			default:
 				break;
 			}
-			printf("$EX: %s\n", EX);
-			fprintf(snapshot, "$EX: %s\n", EX);
 		}
 		else {
 			printf("$EX: %s\n", EX);
@@ -149,8 +167,6 @@ public:
 		fprintf(snapshot,"$DM: %s\n", DM);
 		printf("$WB: %s\n", WB);
 		fprintf(snapshot,"$WB: %s\n\n\n", WB);
-		for (int i = 0; i < 34; i++)
-			copyreg[i] = reg[i];
 		if (writeback) {
 			reg[wb_num] = wb_data;
 			printf("%%%%####wb_num,wb_data=%d,%d\n", wb_num, wb_data);

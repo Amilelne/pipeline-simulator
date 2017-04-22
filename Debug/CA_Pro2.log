@@ -1,17 +1,13 @@
 ﻿  main.cpp
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): warning C4473: 'printf' : not enough arguments passed for format string
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): warning C4473: 'printf' : not enough arguments passed for format string
+  d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
+  d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): note: the missing variadic argument 3 is required by format string '%d'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): warning C4477: 'fprintf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): warning C4473: 'fprintf' : not enough arguments passed for format string
   d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
   d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): note: the missing variadic argument 3 is required by format string '%d'
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(111): warning C4477: 'fprintf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(111): warning C4473: 'fprintf' : not enough arguments passed for format string
-  d:\vs_file\ca_pro2\ca_pro2\regfile.h(111): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
-  d:\vs_file\ca_pro2\ca_pro2\regfile.h(111): note: the missing variadic argument 3 is required by format string '%d'
 d:\vs_file\ca_pro2\ca_pro2\main.cpp(25): warning C4244: '=': conversion from 'std::streamoff' to 'long', possible loss of data
 d:\vs_file\ca_pro2\ca_pro2\main.cpp(32): warning C4244: 'initializing': conversion from 'std::streamoff' to 'long', possible loss of data
-  Generating Code...
-  Skipping... (no relevant changes detected)
-  regfile.cpp
-  simulate.cpp
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.exe
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.pdb (Partial PDB)

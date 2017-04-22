@@ -8,6 +8,7 @@ public:
 	bool MemtoReg;
 	int rt_num;
 	WB() {
+		rt_num = 0;
 		RegWrite = false;
 		MemtoReg = false;
 	}
@@ -29,6 +30,7 @@ public:
 		printf("MemRead=%d,MemWrite=%d\n", MemRead, MemWrite);
 	}
 };
+
 class EX {
 public:
 	int ALUOp;
@@ -41,6 +43,12 @@ public:
 		printf("----EX-----\n");
 		printf("ALUOp=%06x,ALUSrc=%d,RegDst=%d\n", ALUOp, ALUSrc, RegDst);
 	}
+};
+class NOP {
+public:
+	EX ex;
+	M m;
+	WB wb;
 };
 class Control {
 public:
@@ -63,12 +71,6 @@ public:
 	void decode_instr(int opcode);
 	//void trans_to_IDEX(bufferIDEX &buf);
 };
-class NOP {
-public:
-	EX ex;
-	M m;
-	WB wb;
-};
 class bufferDMWB {
 public:
 	int ALU_result;
@@ -76,11 +78,12 @@ public:
 	int rt;
 	int opcode;
 	WB wb;
+	int write_data;
 public:
 	bufferDMWB();
 	void show() {
 		printf("------------------DMWB------------------------------\n");
-		printf("ALU_result=%d,data=%x,rt=%d,opcode=%x\n",ALU_result,data,rt,opcode);
+		printf("ALU_result=%d,data=%x,write_data=%d,rt=%d,opcode=%x\n",ALU_result,data,write_data,rt,opcode);
 		wb.show();
 	}
 };
@@ -170,20 +173,26 @@ public:
 			ALU_control = 0x0110;
 		else if (ALUOp == 0x10) {
 			switch (funct) {
-			case 0x100000:
+			case 0x20:
 				ALU_control = 0x0010;
 				break;
-			case 0x100010:
+			case 0x22:
 				ALU_control = 0x0110;
 				break;
-			case 0x100100:
+			case 0x24:
 				ALU_control = 0x0000;
 				break;
-			case 0x100101:
+			case 0x25:
 				ALU_control = 0x0001;
 				break;
-			case 0x101010:
+			case 0x2A:
 				ALU_control = 0x0111;
+				break;
+			case 0x10:
+				ALU_control = 0x1111;
+				break;
+			case 0x12:
+				ALU_control = 0x1111;
 				break;
 			}
 		}
@@ -199,7 +208,7 @@ public:
 };
 class EXstage {
 public:
-	void calculate(bufferIDEX bufIDEX,bufferEXDM &bufEXDM,regfile &reg, ALUcontrol &ALU_c);
+	void calculate(bufferIDEX &bufIDEX,bufferEXDM &bufEXDM, bufferDMWB bufDMWB,regfile &reg, ALUcontrol &ALU_c, FILE* &snapshot,NOP nop);
 	
 };
 class DMstage {
