@@ -62,13 +62,18 @@ public:
 	bool ALUSrc;
 	bool RegWrite;
 	Control() {
-		RegDst = Jump = Branch = MemRead = MemtoReg = ALUOp = MemWrite = ALUSrc = RegWrite = false;
+		RegDst = Jump = Branch = MemRead = MemtoReg  = MemWrite = ALUSrc = RegWrite = false;
+		ALUOp = 0x11;
 	}
 	void show() {
 		printf("------control-----\n");
 		printf("control:Regdst=%d,Jump=%d,Branch=%d,Memread=%d,MemtoReg=%d,ALUOp=%d,MemWrite=%d,ALUSrc=%d,RegWrite=%d\n", RegDst, Jump, Branch, MemRead, MemtoReg, ALUOp, MemWrite, ALUSrc, RegWrite);
 	}
-	void decode_instr(int opcode);
+	void decode_instr(int opcode,int funct);
+	void decode_nop() {
+		RegDst = Jump = Branch = MemRead = MemtoReg = MemWrite = ALUSrc = RegWrite = false;
+		ALUOp = 0x11;
+	}
 	//void trans_to_IDEX(bufferIDEX &buf);
 };
 class bufferDMWB {
@@ -108,7 +113,6 @@ class bufferIDEX {
 public:
 	int rsdata;
 	int rtdata;
-	int PC;
 	int rs_num;
 	int rt_num;
 	int rd_num;
@@ -116,25 +120,27 @@ public:
 	int shamt;
 	int func;
 	int immediate;
+	int jal_PC;
 	int forward_from_DMWB;
-	bool equal;
+	int address;
 	EX ex;
 	M m;
 	WB wb;
 public:
 	bufferIDEX() {
+		rsdata = rtdata = 0;
 		rs_num = rt_num = rd_num = opcode = shamt = func = forward_from_DMWB = 0;
-		equal = false;
+		jal_PC = 0;
+		address = 0;
 	}
 	void show() {
 		printf("---------------------------IDEX-----------------\n");
-		printf("rsdata=%08x,rtdata=%08x,PC=%d\n", rsdata, rtdata, PC);
-		printf("rs_num=%d,rt_num=%d,rd_num=%d,opcode=%x,func=%x,shamt=%x,immediate=%x,equal=%d\n", rs_num, rt_num, rd_num, opcode, func, shamt, immediate, equal);
+		printf("rsdata=%08x,rtdata=%08x,jal_pc=%08x\n", rsdata, rtdata,jal_PC);
+		printf("rs_num=%d,rt_num=%d,rd_num=%d,opcode=%x,func=%x,shamt=%x,immediate=%x,address=%08x\n", rs_num, rt_num, rd_num, opcode, func, shamt, immediate,address);
 		ex.show();
 		m.show();
 		wb.show();
 	}
-	void forward_DMWB(bufferDMWB bufDMWB);
 };
 class bufferIFID {
 public:
@@ -150,9 +156,13 @@ public:
 	int func;
 	int immediate;
 	int shamt;
+	int EX_data_forward;
 public:
 	bufferIFID() {
 		hazard = flash = jump = false;
+		EX_data_forward = 0;
+		rs_num = rt_num = rd_num = 0;
+		opcode = immediate = shamt = EX_data_forward = 0;
 	}
 	void show() {
 		printf("---------IFID-------------\n");
@@ -177,6 +187,9 @@ public:
 			case 0x20:
 				ALU_control = 0x0010;
 				break;
+			case 0x21:
+				ALU_control = 0x0010;
+				break;
 			case 0x22:
 				ALU_control = 0x0110;
 				break;
@@ -195,6 +208,9 @@ public:
 			case 0x12:
 				ALU_control = 0x1111;
 				break;
+			default:
+				ALU_control = 0x1111;
+				break;
 			}
 		}
 	}
@@ -209,14 +225,14 @@ public:
 };
 class EXstage {
 public:
-	void calculate(bufferIDEX &bufIDEX,bufferEXDM &bufEXDM, bufferDMWB bufDMWB,regfile &reg, ALUcontrol &ALU_c, FILE* &snapshot,NOP nop);
+	void calculate(bufferIFID &bufIFID, bufferIDEX &bufIDEX,bufferEXDM &bufEXDM, bufferDMWB bufDMWB,regfile &reg, ALUcontrol &ALU_c, FILE* &snapshot,NOP nop);
 	
 };
 class DMstage {
 public:
 	void deal_memory(bufferIDEX &bufIDEX, bufferEXDM bufEXDM,bufferDMWB &bufDMWB,int data[],regfile &reg);
-	int read_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB, int data[]);
-	int write_memory(bufferEXDM bufEXDM,int data[]);
+	int read_memory(bufferEXDM bufEXDM,bufferDMWB &bufDMWB, int data[], regfile &reg);
+	int write_memory(bufferEXDM bufEXDM,int data[], regfile &reg);
 };
 class WBstage {
 public:
@@ -231,14 +247,14 @@ public:
 	}
 	bool Branch_Hazard(bufferIFID bufIFID,bufferIDEX bufIDEX, bufferEXDM bufEXDM) {
 		if (bufIFID.opcode == 0x04 || bufIFID.opcode == 0x05 || bufIFID.opcode == 0x07) {
-			if (bufIDEX.wb.RegWrite && ((bufIDEX.wb.rt_num == bufIFID.rs_num) || (bufIDEX.wb.rt_num == bufIFID.rt_num)))
+			if (bufIDEX.wb.RegWrite && bufIDEX.wb.rt_num!=0 && ((bufIDEX.wb.rt_num == bufIFID.rs_num) || (bufIDEX.wb.rt_num == bufIFID.rt_num)))
 				return true;
-			else if (bufEXDM.wb.MemtoReg && ((bufEXDM.wb.rt_num == bufIFID.rs_num) || (bufEXDM.wb.rt_num == bufIFID.rt_num)))
+			else if (bufEXDM.wb.MemtoReg && bufEXDM.wb.rt_num != 0 && ((bufEXDM.wb.rt_num == bufIFID.rs_num) || (bufEXDM.wb.rt_num == bufIFID.rt_num)))
 				return true;
 			else
 				return false;
 		}
-		if (bufIDEX.m.MemRead && ((bufIDEX.wb.rt_num == bufIFID.rs_num) || (bufIDEX.wb.rt_num == bufIFID.rt_num)))
+		if (bufIDEX.m.MemRead &&  bufIDEX.wb.rt_num != 0 && ((bufIDEX.wb.rt_num == bufIFID.rs_num) || (bufIDEX.wb.rt_num == bufIFID.rt_num)))
 			return true;
 		return false;
 	}
@@ -260,11 +276,11 @@ public:
 		return (ForwardA+ForwardB);
 	}
 	int MEM_hazard(bufferDMWB bufDMWB, bufferIDEX bufIDEX, bufferEXDM bufEXDM,regfile &reg) {
-		if (bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufDMWB.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rs_num))
+		if ((bufIDEX.opcode!=0x04&& bufIDEX.opcode != 0x05&& bufIDEX.opcode != 0x06)&&bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufEXDM.wb.rt_num == bufIDEX.rs_num)) && (bufDMWB.wb.rt_num == bufIDEX.rs_num))
 			ForwardA = 4;
 		else
 			ForwardA = 0;
-		if (bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufDMWB.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rt_num))
+		if ((bufIDEX.opcode != 0x04 && bufIDEX.opcode != 0x05 && bufIDEX.opcode != 0x06)&&bufDMWB.wb.RegWrite && (bufDMWB.wb.rt_num != 0) && !(bufEXDM.wb.RegWrite && (bufEXDM.wb.rt_num != 0) && (bufEXDM.wb.rt_num == bufIDEX.rt_num)) && (bufDMWB.wb.rt_num == bufIDEX.rt_num))
 			ForwardB = 7;
 		else
 			ForwardB = 0;

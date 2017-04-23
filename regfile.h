@@ -27,15 +27,21 @@ public:
 	int wb_data;
 	int HI_data;
 	int LO_data;
+	int branchPC;
 	bool writeback;
 	bool mult;
 	bool write0;
+	bool flush;
+	bool jumpflush;
+	bool address_overflow;
+	bool number_overflow;
 public:
 	regfile() {
 		reg[34] = { 0 };
 		//reg[32]=HI,reg[33]=LO
 		PC = 0;
 		IniPC = 0;
+		branchPC = 0;
 		ID = "NOP";
 		EX = "NOP";
 		DM = "NOP";
@@ -43,6 +49,9 @@ public:
 		overwrite = 0;
 		BranchStall = false;
 		writeback = false;
+		jumpflush = flush = false;
+		address_overflow = false;
+		number_overflow = false;
 		mult = false;
 		write0 = false;
 		EX_ID_forward = EX_EX_forward = DM_EX_forward = 0;
@@ -78,6 +87,7 @@ public:
 				printf("$%02d: 0x%08X\n", i, reg[i]);
 				fprintf(snapshot,"$%02d: 0x%08X\n", i, reg[i]);
 			}*/
+		printf("\n@@@@@@reg:flush=%d\n\n", flush);
 		printf("$PC: 0x%08X\n", PC-4);
 		fprintf(snapshot,"$PC: 0x%08X\n", PC - 4);
 		if (BranchStall) {
@@ -88,36 +98,38 @@ public:
 			ID = "NOP";
 			PC = PC - 4;
 		}
-		else if (EX_ID_forward) {
-			switch (EX_ID_forward)
-			{
-			case 1:
-				printf("$IF: 0x%08X\n", IF);
-				fprintf(snapshot,"$IF: 0x%08X\n", IF);
-				printf("$ID: %s fwd_EX-DM_rs_$%d\n", ID,EX_ID_rt_num);
-				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d\n", ID, EX_ID_rt_num);
-				break;
-			case 2:
-				printf("$IF: 0x%08X\n", IF);
-				fprintf(snapshot,"$IF: 0x%08X\n", IF);
-				printf("$ID: %s fwd_EX-DM_rt_$%d\n", ID, EX_ID_rt_num);
-				fprintf(snapshot,"$ID: %s fwd_EX-DM_rt_$%d\n", ID, EX_ID_rt_num);
-				break;
-			case 3:
-				printf("$IF: 0x%08X\n", IF);
-				fprintf(snapshot,"$IF: 0x%08X\n", IF);
-				printf("$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX_ID_rt_num, EX_ID_rt_num);
-				fprintf(snapshot,"$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX_ID_rt_num, EX_ID_rt_num);
-				break;
-			default:
-				break;
-			}
-		}
 		else {
-			printf("$IF: 0x%08X\n", IF);
-			fprintf(snapshot,"$IF: 0x%08X\n", IF);
-			printf("$ID: %s\n", ID);
-			fprintf(snapshot,"$ID: %s\n", ID);
+			if (flush) {
+				printf("$IF: 0x%08X\n", IF);
+				fprintf(snapshot, "$IF: 0x%08X to_be_flushed\n", IF);
+			}
+			else {
+				printf("$IF: 0x%08X\n", IF);
+				fprintf(snapshot, "$IF: 0x%08X\n", IF);
+			}
+			if (EX_ID_forward) {
+				switch (EX_ID_forward)
+				{
+				case 1:
+					printf("$ID: %s fwd_EX-DM_rs_$%d\n", ID, EX_ID_rt_num);
+					fprintf(snapshot, "$ID: %s fwd_EX-DM_rs_$%d\n", ID, EX_ID_rt_num);
+					break;
+				case 2:
+					printf("$ID: %s fwd_EX-DM_rt_$%d\n", ID, EX_ID_rt_num);
+					fprintf(snapshot, "$ID: %s fwd_EX-DM_rt_$%d\n", ID, EX_ID_rt_num);
+					break;
+				case 3:
+					printf("$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX_ID_rt_num, EX_ID_rt_num);
+					fprintf(snapshot, "$ID: %s fwd_EX-DM_rs_$%d fwd_EX-DM_rt_$%d\n", EX_ID_rt_num, EX_ID_rt_num);
+					break;
+				default:
+					break;
+				}
+			}
+			else {
+				printf("$ID: %s\n", ID);
+				fprintf(snapshot, "$ID: %s\n", ID);
+			}	
 		}
 		if (DM_EX_forward || EX_EX_forward) {
 			int forward = DM_EX_forward + EX_EX_forward;
@@ -168,9 +180,14 @@ public:
 		printf("$WB: %s\n", WB);
 		fprintf(snapshot,"$WB: %s\n\n\n", WB);
 		if (writeback) {
-			reg[wb_num] = wb_data;
+			if(wb_num)
+				reg[wb_num] = wb_data;
 			printf("%%%%####wb_num,wb_data=%d,%d\n", wb_num, wb_data);
-		}		
+		}	
+		if (jumpflush)
+			PC = branchPC;
+		else if(flush)
+			PC += branchPC - 4;
 	}
 	void IFOP(int rs,int rt, int &rsdata, int &rtdata);
 	void WBOP(int rt,int data);

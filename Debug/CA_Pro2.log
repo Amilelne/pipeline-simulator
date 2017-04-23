@@ -1,17 +1,19 @@
 ﻿  simulate.cpp
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): warning C4473: 'printf' : not enough arguments passed for format string
-  d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
-  d:\vs_file\ca_pro2\ca_pro2\regfile.h(109): note: the missing variadic argument 3 is required by format string '%d'
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): warning C4477: 'fprintf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
-d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): warning C4473: 'fprintf' : not enough arguments passed for format string
-  d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
-  d:\vs_file\ca_pro2\ca_pro2\regfile.h(110): note: the missing variadic argument 3 is required by format string '%d'
-d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(213): warning C4477: 'printf' : format string '%16x' requires an argument of type 'unsigned int', but variadic argument 3 has type 'int64_t'
-  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(213): note: consider using '%llx' in the format string
-  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(213): note: consider using '%I64x' in the format string
-d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(314): warning C4473: 'printf' : not enough arguments passed for format string
-  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(314): note: placeholders and their parameters expect 2 variadic arguments, but 1 were provided
-  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(314): note: the missing variadic argument 2 is required by format string '%08x'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(122): warning C4477: 'printf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(122): warning C4473: 'printf' : not enough arguments passed for format string
+  d:\vs_file\ca_pro2\ca_pro2\regfile.h(122): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
+  d:\vs_file\ca_pro2\ca_pro2\regfile.h(122): note: the missing variadic argument 3 is required by format string '%d'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(123): warning C4477: 'fprintf' : format string '%s' requires an argument of type 'char *', but variadic argument 1 has type 'int'
+d:\vs_file\ca_pro2\ca_pro2\regfile.h(123): warning C4473: 'fprintf' : not enough arguments passed for format string
+  d:\vs_file\ca_pro2\ca_pro2\regfile.h(123): note: placeholders and their parameters expect 3 variadic arguments, but 2 were provided
+  d:\vs_file\ca_pro2\ca_pro2\regfile.h(123): note: the missing variadic argument 3 is required by format string '%d'
+d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(126): warning C4554: '<<': check operator precedence for possible error; use parentheses to clarify precedence
+d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(133): warning C4554: '<<': check operator precedence for possible error; use parentheses to clarify precedence
+d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(356): warning C4477: 'printf' : format string '%16x' requires an argument of type 'unsigned int', but variadic argument 3 has type 'int64_t'
+  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(356): note: consider using '%llx' in the format string
+  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(356): note: consider using '%I64x' in the format string
+d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(511): warning C4473: 'printf' : not enough arguments passed for format string
+  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(511): note: placeholders and their parameters expect 2 variadic arguments, but 1 were provided
+  d:\vs_file\ca_pro2\ca_pro2\simulate.cpp(511): note: the missing variadic argument 2 is required by format string '%08x'
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.exe
   CA_Pro2.vcxproj -> D:\VS_file\CA_Pro2\Debug\CA_Pro2.pdb (Partial PDB)

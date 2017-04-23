@@ -18,8 +18,8 @@ public:
 	int or (int rsdata, int rtdata) {
 		return (rsdata | rtdata);
 	}
-	int set_on_less_than() {
-		return 0;
+	int set_on_less_than(int rsdata,int rtdata) {
+		return (rsdata < rtdata);
 	}
 	int alu(int rsdata, int rtdata) {
 		if (ALU_control == 0x0010) {
@@ -35,7 +35,7 @@ public:
 			return or (rsdata, rtdata);
 		}
 		else if (ALU_control == 0x0111) {
-			return set_on_less_than();
+			return set_on_less_than(rsdata,rtdata);
 		}
 		else
 			return 0;

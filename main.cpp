@@ -67,16 +67,18 @@ int main()
    reg.PC = instruction[0];
    reg.SP = data[0];
    reg.IF = instruction[2];
+   reg.reg[29] = data[0];
    int cnt = 0;
    int rt_num = -1;
-   while (reg.check_end() != false) {
+   while (reg.check_end() != false&&cnt<=52) {
 	   printf("cycle %d\n",cnt);
 	   fprintf(snapshot,"cycle %d\n", cnt);
+	   printf("***************************reg[0]=%d\n*************************************", reg.reg[0]);
 	   if (reg.writeback) {
 		   if (reg.write0)
 			   fprintf(error_file, "In cycle %d: Write $0 Error\n", cnt);
 		   else
-			   for (int i = 1; i < 32; i++)
+			   for (int i = 0; i < 32; i++)
 				   if (i == rt_num&&reg.reg[i] != reg.wb_data) {
 					   printf("$%02d: 0x%08X\n", i, reg.reg[i]);
 					   fprintf(snapshot, "$%02d: 0x%08X\n", i, reg.reg[i]);
@@ -84,10 +86,12 @@ int main()
 	   }
 	   if (reg.mult) {
 		   if (reg.HI_data != reg.reg[32]) {
+			   reg.HI_data = reg.reg[32];
 			   printf("$HI: 0x%08X\n", reg.reg[32]);
 			   fprintf(snapshot, "$HI: 0x%08X\n", reg.reg[32]);
 		   }
 		   if (reg.LO_data != reg.reg[33]) {
+			   reg.LO_data = reg.reg[33];
 			   printf("$LO: 0x%08X\n", reg.reg[33]);
 			   fprintf(snapshot, "$LO: 0x%08X\n", reg.reg[33]);
 		   }
@@ -97,23 +101,27 @@ int main()
 	   reg.BranchStall = hazard.Branch_Hazard(IFID,IDEX,EXDM);
 	   if (!reg.BranchStall) {
 		   reg.EX_ID_forward = hazard.EX_ID_hazard(IFID, IDEX, EXDM, reg);
-		   reg.DM_EX_forward = hazard.MEM_hazard(DMWB, IDEX, EXDM, reg);
-		   reg.EX_EX_forward = hazard.EX_hazard(EXDM,IDEX,reg);
 		   if(reg.EX_ID_forward)
-			   reg.EX_ID_rt_num = EXDM.wb.rt_num;
-		   if (reg.DM_EX_forward)
-			   reg.DM_EX_rt_num = DMWB.wb.rt_num;
-		   if (reg.EX_EX_forward)
-			   reg.EX_EX_rt_num = EXDM.wb.rt_num;
+			   reg.EX_ID_rt_num = EXDM.wb.rt_num;	   
 	   }
+	   reg.DM_EX_forward = hazard.MEM_hazard(DMWB, IDEX, EXDM, reg);
+	   reg.EX_EX_forward = hazard.EX_hazard(EXDM, IDEX, reg);
+	   if (reg.DM_EX_forward)
+		   reg.DM_EX_rt_num = DMWB.wb.rt_num;
+	   if (reg.EX_EX_forward)
+		   reg.EX_EX_rt_num = EXDM.wb.rt_num;
 	   WBstage.writeback(DMWB, reg);
 	   rt_num = DMWB.wb.rt_num;
 	   DMstage.deal_memory(IDEX,EXDM, DMWB, data, reg);
 	   DMWB.show();
-	   EXstage.calculate(IDEX, EXDM,DMWB, reg,alucontrol,snapshot,nop);
+	   EXstage.calculate(IFID,IDEX, EXDM,DMWB, reg,alucontrol,snapshot,nop);
 	   EXDM.show();
 	   if (reg.overwrite > 1)
 		   fprintf(error_file, "In cycle %d: Overwrite HI-LO registers\n", cnt+1);
+	   if (reg.number_overflow) {
+		   fprintf(error_file, "In cycle %d: Number Overflow\n", cnt + 1);
+		   reg.number_overflow = false;
+	   }
 	   IDstage.instr_decode(IFID, IDEX,EXDM, control, reg, instru);
 	   IDEX.show();
 	   IFstage.instr_fetch(IFID, instruction, reg);
