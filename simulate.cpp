@@ -4,6 +4,7 @@
 #include<iostream>
 #include "arithmetic.h"
 #include<string>
+#include<stdlib.h>
 using namespace std;
 ALU alu;
 bufferDMWB::bufferDMWB() {
@@ -299,16 +300,6 @@ void Control::decode_instr(int opcode,int funct) {
 		MemtoReg = 0;
 	}
 }
-/*
-void Control::trans_to_IDEX(bufferIDEX &buf) {
-	buf.ex.ALUOp = ALUOp;
-	buf.ex.RegDst = RegDst;
-	buf.ex.ALUSrc = ALUSrc;
-	buf.m.MemRead = MemRead;
-	buf.wb.MemtoReg = MemtoReg;
-	buf.m.MemWrite = MemWrite;
-	buf.wb.RegWrite = RegWrite;
-}*/
 void EXstage::calculate(bufferIFID &bufIFID,bufferIDEX &bufIDEX, bufferEXDM &bufEXDM,bufferDMWB bufDMWB,regfile &reg,ALUcontrol &ALU_c,FILE* &snapshot,NOP nop) {
 	bufIFID.EX_data_forward = bufEXDM.ALU_result;
 	if (reg.DM_EX_forward || reg.EX_EX_forward) {
@@ -349,11 +340,9 @@ void EXstage::calculate(bufferIFID &bufIFID,bufferIDEX &bufIDEX, bufferEXDM &buf
 		reg.mult = true;
 		reg.HI_data = reg.reg[32];
 		reg.LO_data = reg.reg[33];
-		printf("@@@@@HI_data=%08x,reg[32]=%08x\n@@@@@@@", reg.HI_data, reg.reg[32]);
 		if (bufIDEX.func == 0x18) {
 			int64_t product = 0;
 			product = (int64_t)(int32_t)bufIDEX.rsdata * (int64_t)(int32_t)bufIDEX.rtdata;
-			printf("%%%%%%rsdata=%d,rt_data=%d,product=%16x\n", bufIDEX.rsdata, bufIDEX.rtdata,product);
 			reg.reg[32] = (uint32_t)((product >> 32) & 0xffffffff);
 			reg.reg[33] = (uint32_t)(0xffffffff & product);
 		}
@@ -412,7 +401,7 @@ void EXstage::calculate(bufferIFID &bufIFID,bufferIDEX &bufIDEX, bufferEXDM &buf
 		bufEXDM.opcode = bufIDEX.opcode;
 		reg.EX = reg.ID;
 	}
-	else if (bufIDEX.opcode == 0x00 && (bufIDEX.func == 0x00||bufIDEX.func == 0x02|| bufIDEX.func == 0x03|| bufIDEX.func == 0x08|| bufIDEX.func == 0x10 || bufIDEX.func == 0x12|| bufIDEX.func == 0x20 || bufIDEX.func == 0x22 || bufIDEX.func == 0x26|| bufIDEX.func == 0x26|| bufIDEX.func == 0x27|| bufIDEX.func == 0x28)) {
+	else if (bufIDEX.opcode == 0x00 && (bufIDEX.func == 0x00||bufIDEX.func == 0x02|| bufIDEX.func == 0x03|| bufIDEX.func == 0x08|| bufIDEX.func == 0x10 || bufIDEX.func == 0x12|| bufIDEX.func == 0x20 || bufIDEX.func == 0x21 || bufIDEX.func == 0x22 || bufIDEX.func == 0x24 || bufIDEX.func == 0x25 || bufIDEX.func == 0x26|| bufIDEX.func == 0x27|| bufIDEX.func == 0x28)) {
 		int32_t rt = bufIDEX.rtdata;
 		switch (bufIDEX.func) {
 		case 0x00:
@@ -440,12 +429,21 @@ void EXstage::calculate(bufferIFID &bufIFID,bufferIDEX &bufIDEX, bufferEXDM &buf
 			else
 				reg.number_overflow = false;
 			break;
+		case 0x21:
+			bufEXDM.ALU_result = bufIDEX.rsdata + bufIDEX.rtdata;
+			break;
 		case 0x22:
 			bufEXDM.ALU_result = bufIDEX.rsdata + rt;
 			if ((bufIDEX.rsdata > 0 && rt > 0 && bufEXDM.ALU_result <= 0) || (bufIDEX.rsdata < 0 && rt < 0 && bufEXDM.ALU_result >= 0))
 				reg.number_overflow = true;
 			else
 				reg.number_overflow = false;
+			break;
+		case 0x24:
+			bufEXDM.ALU_result = bufIDEX.rsdata & bufIDEX.rtdata;
+			break;
+		case 0x25:
+			bufEXDM.ALU_result = bufIDEX.rsdata | bufIDEX.rtdata;
 			break;
 		case 0x26:
 			bufEXDM.ALU_result = bufIDEX.rsdata ^ bufIDEX.rtdata;

@@ -23,19 +23,24 @@ public:
 	}
 	int alu(int rsdata, int rtdata) {
 		if (ALU_control == 0x0010) {
-			return add(rsdata, rtdata);
+			int reu = add(rsdata, rtdata);
+			return reu;
 		}
 		else if (ALU_control == 0x0110) {
-			return subtract(rsdata, rtdata);
+			int reu = subtract(rsdata, rtdata);
+			return reu;
 		}
 		else if (ALU_control == 0x0000) {
-			return and (rsdata, rtdata);
+			int reu = and (rsdata, rtdata);
+			return reu;
 		}
 		else if (ALU_control == 0x0001) {
-			return or (rsdata, rtdata);
+			int reu = or (rsdata, rtdata);
+			return reu;
 		}
 		else if (ALU_control == 0x0111) {
-			return set_on_less_than(rsdata,rtdata);
+			int reu = set_on_less_than(rsdata, rtdata);
+			return reu;
 		}
 		else
 			return 0;
